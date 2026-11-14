@@ -17,12 +17,12 @@ import { OutputAccumulator } from "./output-accumulator.ts";
 import { BASH_UPDATE_THROTTLE_MS, createShellRenderers } from "./renderers/bash.ts";
 import { type TypeBoxAgentTool, wrapToolDefinition } from "./tool-definition-wrapper.ts";
 import {
+	appendNoticeWithinLimits,
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
-	appendNoticeWithinLimits,
 	formatSize,
-	resolveToolOutputLimits,
 	type TruncationResult,
+	toolOutputLimitsForCall,
 } from "./truncate.ts";
 
 const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -308,7 +308,7 @@ export function createShellToolDefinition(
 				exposeSessionEnvironment,
 				ctx,
 			);
-			const limits = resolveToolOutputLimits(ctx?.getSettings?.());
+			const limits = toolOutputLimitsForCall(ctx);
 			const output = new OutputAccumulator({
 				tempFilePrefix: config.tempFilePrefix,
 				maxBytes: limits.maxBytes,

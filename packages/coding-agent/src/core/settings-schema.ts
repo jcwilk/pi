@@ -17,13 +17,18 @@ const CompactionModelOverrideSchema = Type.Object({
 
 const ToolOutputSettingsSchema = Type.Object({
 	maxBytes: Type.Optional(
-		nonNegativeSafeInteger({
-			description: "Maximum bytes of a bash or read result included in the model-facing excerpt. The full output stays readable.",
+		Type.Integer({
+			minimum: 0,
+			maximum: Number.MAX_SAFE_INTEGER,
+			description:
+				"Maximum bytes of a bash or read result included in the model-facing excerpt. The full output stays readable.",
 			default: SETTINGS_DEFAULTS.toolOutput.maxBytes,
 		}),
 	),
 	maxLines: Type.Optional(
-		nonNegativeSafeInteger({
+		Type.Integer({
+			minimum: 0,
+			maximum: Number.MAX_SAFE_INTEGER,
 			description: "Maximum lines of a bash or read result included in the model-facing excerpt.",
 			default: SETTINGS_DEFAULTS.toolOutput.maxLines,
 		}),

@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SettingsManager } from "../src/core/settings-manager.ts";
-import { createBashTool } from "../src/core/tools/bash.ts";
-import { createReadTool } from "../src/core/tools/read.ts";
+import { createBashToolDefinition } from "../src/core/tools/bash.ts";
+import { createReadToolDefinition } from "../src/core/tools/read.ts";
 import { appendNoticeWithinLimits, resolveToolOutputLimits } from "../src/core/tools/truncate.ts";
 
 const textOf = (result: { content?: Array<{ type: string; text?: string }> }) =>
@@ -28,14 +28,10 @@ describe("toolOutput ceilings", () => {
 		const dir = mkdtempSync(join(tmpdir(), "pi-tool-output-"));
 		const file = join(dir, "wide.txt");
 		writeFileSync(file, Array.from({ length: 30 }, () => "abcdefghij").join("\n"));
-		const tool = createReadTool(dir);
-		const result = await tool.execute(
-			"call",
-			{ path: file },
-			undefined,
-			undefined,
-			{ getSettings: () => ({ toolOutput: { maxBytes: 180, maxLines: 4 } }) } as never,
-		);
+		const tool = createReadToolDefinition(dir);
+		const result = await tool.execute("call", { path: file }, undefined, undefined, {
+			getSettings: () => ({ toolOutput: { maxBytes: 180, maxLines: 4 } }),
+		} as never);
 		const text = textOf(result);
 		expect(Buffer.byteLength(text, "utf-8")).toBeLessThanOrEqual(180);
 		expect(text.split("\n").length).toBeLessThanOrEqual(4);
@@ -44,7 +40,7 @@ describe("toolOutput ceilings", () => {
 	});
 
 	it("keeps a bash excerpt within the configured ceilings and names the full output", async () => {
-		const tool = createBashTool(process.cwd());
+		const tool = createBashToolDefinition(process.cwd());
 		const result = await tool.execute(
 			"call",
 			{ command: "python3 -c 'print(\"abcde\" * 80)'" },
