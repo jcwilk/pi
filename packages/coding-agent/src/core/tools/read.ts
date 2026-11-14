@@ -10,13 +10,13 @@ import { resolveReadPathAsync } from "./path-utils.ts";
 import { readRenderers } from "./renderers/read.ts";
 import { type TypeBoxAgentTool, wrapToolDefinition } from "./tool-definition-wrapper.ts";
 import {
+	appendNoticeWithinLimits,
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
-	appendNoticeWithinLimits,
 	formatSize,
-	resolveToolOutputLimits,
 	type ToolOutputLimits,
 	type TruncationResult,
+	toolOutputLimitsForCall,
 	truncateHead,
 } from "./truncate.ts";
 
@@ -312,7 +312,7 @@ export function createReadToolDefinition(
 								// Read text content. Convert offset from 1-indexed input to 0-indexed line access.
 								const startLine = offset ? Math.max(0, offset - 1) : 0;
 								const startLineDisplay = startLine + 1;
-								const limits = resolveToolOutputLimits(ctx?.getSettings?.());
+								const limits = toolOutputLimitsForCall(ctx);
 								const { totalFileLines, truncation, firstLineBytes } =
 									ops.createReadStream && isStreamableRange(offset, limit)
 										? await selectLinesFromStream(

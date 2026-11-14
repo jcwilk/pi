@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 /**
  * Shared truncation utilities for tool outputs.
  *
@@ -17,6 +20,23 @@ export interface ToolOutputLimits {
 }
 
 /** Absolute tool-excerpt ceilings. Missing or invalid settings keep the upstream defaults. */
+/** Read ceilings from a tool context when it exposes settings, otherwise from the agent settings file. */
+export function toolOutputLimitsForCall(ctx: unknown): ToolOutputLimits {
+	if (ctx && typeof ctx === "object" && "getSettings" in ctx) {
+		const getter = (ctx as { getSettings?: () => { toolOutput?: { maxBytes?: number; maxLines?: number } } })
+			.getSettings;
+		if (typeof getter === "function") return resolveToolOutputLimits(getter());
+	}
+	try {
+		const dir = process.env.PI_CODING_AGENT_DIR;
+		if (!dir) return resolveToolOutputLimits(undefined);
+		const settings = JSON.parse(readFileSync(join(dir, "settings.json"), "utf8"));
+		return resolveToolOutputLimits(settings);
+	} catch {
+		return resolveToolOutputLimits(undefined);
+	}
+}
+
 export function resolveToolOutputLimits(settings?: {
 	toolOutput?: { maxBytes?: number; maxLines?: number };
 }): ToolOutputLimits {

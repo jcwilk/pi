@@ -10,7 +10,6 @@ import { normalizePath, resolvePath } from "../utils/paths.ts";
 import { stripBom } from "../utils/text.ts";
 import { DEFAULT_HTTP_IDLE_TIMEOUT_MS, parseHttpIdleTimeoutMs } from "./http-dispatcher.ts";
 import { SETTINGS_DEFAULTS } from "./settings-defaults.ts";
-import { resolveToolOutputLimits, type ToolOutputLimits } from "./tools/truncate.ts";
 import type {
 	CacheWarmingMode,
 	CompactionModelOverride,
@@ -26,6 +25,7 @@ import type {
 	TuiMode,
 	WarningSettings,
 } from "./settings-schema.ts";
+import { resolveToolOutputLimits, type ToolOutputLimits } from "./tools/truncate.ts";
 
 export type {
 	BranchSummarySettings,
