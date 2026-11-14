@@ -437,6 +437,8 @@ export class AgentSession {
 	private _compactionAbortController: AbortController | undefined = undefined;
 	private _autoCompactionAbortController: AbortController | undefined = undefined;
 	private _overflowRecoveryAttempted = false;
+	/** Compactions requested by the fleet admission gate for the current turn. */
+	private _admissionReductions = 0;
 
 	// Branch summarization state
 	private _branchSummaryAbortController: AbortController | undefined = undefined;
@@ -1184,6 +1186,7 @@ export class AgentSession {
 		// This ensures the UI sees the updated queue state
 		if (event.type === "message_start" && event.message.role === "user") {
 			this._overflowRecoveryAttempted = false;
+			this._admissionReductions = 0;
 			const messageText = contentText(event.message.content, "");
 			// Check steering queue first
 			const steeringIndex = this._steeringMessages.indexOf(messageText);
@@ -1239,6 +1242,7 @@ export class AgentSession {
 				this._lastAssistantMessage = assistantMsg;
 				if (assistantMsg.stopReason !== "error" && assistantMsg.stopReason !== "length") {
 					this._overflowRecoveryAttempted = false;
+					this._admissionReductions = 0;
 				}
 
 				// Reset retry counter immediately on successful assistant response
@@ -3145,6 +3149,19 @@ export class AgentSession {
 		// Automatic cases 1 and 2: context overflow.
 		// A length stop is recoverable when output ended below the model's original desired limit,
 		// independent of the configured context size or any context-clamped provider request limit.
+		const admissionMessage = assistantMessage.errorMessage ?? "";
+		if (admissionMessage.startsWith("FLEET_ADMISSION_STOP:")) {
+			return false;
+		}
+		if (admissionMessage.startsWith("FLEET_ADMISSION_RETRY:")) {
+			if (this._admissionReductions >= 3) return false;
+			this._admissionReductions += 1;
+			this._omitRecoveryAttempt(assistantMessage);
+			const retry = await this._runAutoCompaction("overflow", true);
+			if (retry) this._failedResponse = assistantMessage;
+			return retry;
+		}
+
 		const currentProjection = this.sessionManager.buildSessionProjection();
 		const assistantEntryId = this._findPersistedMessageEntryId(assistantMessage);
 		const assistantIsProjected =
